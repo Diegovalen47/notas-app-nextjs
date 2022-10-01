@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Course {
+  courseId    Int           @id
+  name        String        @db.VarChar(100)
+  credits     Int
+  inscriptions Inscription[]
+  @@map("course")
+}
+
+model Inscription {
+  typologyId    Int
+  courseId      Int
+  inscriptionId Int       @unique(map: "inscriptionId")
+  targetScore   Decimal?  @db.Decimal(2, 1)
+  semesterId    Int
+  semester      Semester  @relation(fields: [semesterId], references: [semesterId], onDelete: Cascade, map: "inscription_ibfk_1")
+  typology      Typology  @relation(fields: [typologyId], references: [typologyId], onDelete: Cascade, map: "inscription_ibfk_2")
+  course        Course    @relation(fields: [courseId], references: [courseId], onDelete: Cascade, map: "inscription_ibfk_3")
+  partials      Partial[]
+
+  @@id([typologyId, courseId])
+  @@index([courseId], map: "courseId")
+  @@index([semesterId], map: "semesterId")
+  @@map("inscription")
+}
+
+model Partial {
+  partialId     Int         @id
+  name          String      @db.VarChar(100)
+  weight        Decimal     @db.Decimal(4, 3)
+  score         Decimal?    @db.Decimal(2, 1)
+  inscriptionId Int
+  inscription   Inscription @relation(fields: [inscriptionId], references: [inscriptionId], onDelete: Cascade, map: "partial_ibfk_1")
+
+  @@index([inscriptionId], map: "inscriptionId")
+  @@map("partial")
+}
+
+model Semester {
+  semesterId  Int           @id
+  number      Int
+  year        Int
+  period      Int
+  planId      Int
+  studyplan   StudyPlan     @relation(fields: [planId], references: [planId], onDelete: Cascade, map: "semester_ibfk_1")
+  inscriptions Inscription[]
+
+  @@index([planId], map: "planId")
+  @@map("semester")
+}
+
+model StudyPlan {
+  planId        Int        @id
+  name          String     @db.VarChar(100)
+  approvalScore Decimal    @db.Decimal(2, 1)
+  minimunScore  Decimal    @db.Decimal(2, 1)
+  maximumScore  Decimal    @db.Decimal(2, 1)
+  semesters      Semester[]
+  typologys      Typology[]
+  @@map("studyplan")
+}
+
+model Typology {
+  typologyId      Int           @id
+  name            String        @db.VarChar(50)
+  requiredCredits Int
+  planId          Int
+  studyplan       StudyPlan     @relation(fields: [planId], references: [planId], onDelete: Cascade, map: "typology_ibfk_1")
+  inscriptions     Inscription[]
+
+  @@index([planId], map: "planId")
+  @@map("typology")
+}
